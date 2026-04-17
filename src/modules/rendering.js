@@ -119,7 +119,8 @@ function getHeadBadgeHtml(headUsed) {
         'shadow_reaper_necklace': { name: 'S. Reaper', border: 'border-sreaper', text: 'text-sreaper' },
         'junior': { name: 'Junior Ninja', border: 'border-ninja', text: 'text-ninja' },
         'biju_energy': { name: 'Biju Energy', border: 'border-biju', text: 'text-biju'},
-        'bloodline_eye': { name: 'Bloodline', border: 'border-bloodeye', text: 'text-bloodeye'}
+        'bloodline_eye': { name: 'Bloodline', border: 'border-bloodeye', text: 'text-bloodeye'},
+        'spirit_armor': {name: "Spirit Armor", border: 'border-spirit', text: 'text-spirit'}
     };
     
     const h = config[headUsed] || { name: 'Unknown', border: 'border-unknown', text: 'text-unknown' };
@@ -251,7 +252,7 @@ function updateBuildListDisplay(unitId) {
             spa: r.sp || r.spa || 0,
             range: r.ra || r.range || 0,
             prio: r.p || r.prio || 'dmg',
-            headUsed: (typeof r.h === 'number' ? (['none','sun_god','ninja','reaper_necklace','shadow_reaper_necklace','junior','biju_energy','bloodline_eye'][r.h]) : (r.headUsed || r.h)) || 'none',
+            headUsed: (typeof r.h === 'number' ? (['none','sun_god','ninja','reaper_necklace','shadow_reaper_necklace','junior','biju_energy','bloodline_eye', 'spirit_armor'][r.h]) : (r.headUsed || r.h)) || 'none',
             isCustom: !!(r.c || r.isCustom),
             subStats: r.ss || r.subStats || {},
             mainStats: r.ms || r.mainStats || {
@@ -272,7 +273,7 @@ function updateBuildListDisplay(unitId) {
             if (setSelect !== 'all' && r.setName !== setSelect) return false;
             if (headSelect !== 'all' && (r.headUsed || 'none') !== headSelect) return false;
 
-            let hSearch = ({'sun_god':'Sun God','ninja':'Ninja','reaper_necklace':'Reaper','shadow_reaper_necklace':'Shadow Reaper','junior':'Junior','biju_energy':'Biju Energy', 'bloodline_eye':'Bloodline Eye'})[r.headUsed] || '';
+            let hSearch = ({'sun_god':'Sun God','ninja':'Ninja','reaper_necklace':'Reaper','shadow_reaper_necklace':'Shadow Reaper','junior':'Junior','biju_energy':'Biju Energy', 'bloodline_eye':'Bloodline Eye', 'spirit_armor':'Spirit Armor'})[r.headUsed] || '';
             const searchText = `${r.traitName} ${r.setName} ${r.prio} ${hSearch}`.toLowerCase();
             return searchText.includes(searchInput);
         });
@@ -389,7 +390,7 @@ function processUnitCache(unit, specificCfg = null) {
                     if (missingBuilds.length > 0) {
                         const extraResults = calculateUnitBuilds(
                             unit, null, missingBuilds, getValidSubCandidates(), 
-                            cfg.head ? ['sun_god', 'ninja', 'reaper_necklace', 'shadow_reaper_necklace', 'junior', 'biju_energy', 'bloodline_eye'] : ['none'], 
+                            cfg.head ? ['sun_god', 'ninja', 'reaper_necklace', 'shadow_reaper_necklace', 'junior', 'biju_energy', 'bloodline_eye', 'spirit_armor'] : ['none'], 
                             cfg.subs, null, useAbility, mode
                         );
                         calculatedResults = [...calculatedResults, ...extraResults];
@@ -412,7 +413,7 @@ function processUnitCache(unit, specificCfg = null) {
                         const oldBuilds = globalBuilds.filter(b => b.set !== 'reanimated_armor');
                         const customTraitResults = calculateUnitBuilds(
                             unit, null, oldBuilds, getValidSubCandidates(), 
-                            cfg.head ? ['sun_god', 'ninja', 'reaper_necklace', 'shadow_reaper_necklace', 'junior', 'biju_energy', 'bloodline_eye'] : ['none'], 
+                            cfg.head ? ['sun_god', 'ninja', 'reaper_necklace', 'shadow_reaper_necklace', 'junior', 'biju_energy', 'bloodline_eye', 'spirit_armor'] : ['none'], 
                             cfg.subs, newCustomTraits, useAbility, mode
                         );
                         calculatedResults = [...calculatedResults, ...customTraitResults];
@@ -422,7 +423,7 @@ function processUnitCache(unit, specificCfg = null) {
                 // Standard fallback if static DB is missing or Inventory Mode is ON
                 const traitsForCalc = (calculatedResults.length > 0) ? [...(typeof customTraits !== 'undefined' ? customTraits : []), ...(unitSpecificTraits[unit.id] || [])] : null;
                 if (traitsForCalc === null || traitsForCalc.length > 0 || useInventory) {
-                    const dynamicResults = calculateUnitBuilds(unit, null, getFilteredBuilds(), getValidSubCandidates(), cfg.head ? ['sun_god', 'ninja', 'reaper_necklace', 'shadow_reaper_necklace', 'junior', 'biju_energy', 'bloodline_eye'] : ['none'], cfg.subs, traitsForCalc, useAbility, mode);
+                    const dynamicResults = calculateUnitBuilds(unit, null, getFilteredBuilds(), getValidSubCandidates(), cfg.head ? ['sun_god', 'ninja', 'reaper_necklace', 'shadow_reaper_necklace', 'junior', 'biju_energy', 'bloodline_eye', 'spirit_armor'] : ['none'], cfg.subs, traitsForCalc, useAbility, mode);
                     calculatedResults = [...calculatedResults, ...dynamicResults];
                 }
             }
@@ -627,6 +628,7 @@ const topControls = `<div class="unit-toolbar"><div class="ut-actions"><button c
                             <option value="sun_god">Sun God</option>
                             <option value="biju_energy">Biju Energy</option>
                             <option value="bloodline_eye">Bloodline Eye</option>
+                            <option value="spirit_armor">Spirit Armor</option>
                             <option value="ninja">Ninja</option>
                             <option value="junior">Junior Ninja</option>
                             <option value="reaper_necklace">Reaper</option>

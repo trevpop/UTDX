@@ -140,7 +140,10 @@ function getBestSubConfig(build, stats, includeSubs, headMode, candidates, optim
         if (candidates.includes('dmg') && candidates.includes('cf')) strategies.push({ p: 'dmg', s: 'cf', ratio: { p: 6, s: 0 } });
         if (candidates.includes('spa') && candidates.includes('range')) strategies.push({ p: 'spa', s: 'range', ratio: { p: 6, s: 0 } });
         if (candidates.includes('range') && candidates.includes('spa')) strategies.push({ p: 'range', s: 'spa', ratio: { p: 6, s: 0 } });
+        if (candidates.includes('dmg') && candidates.includes('range')) strategies.push({ p: 'dmg', s: 'range', ratio: { p: 6, s: 0 } });
+        if (candidates.includes('dmg') && candidates.includes('spa')) strategies.push({ p: 'dmg', s: 'spa', ratio: { p: 6, s: 0 } });
 
+        
         const pairs = [['dmg', 'cf'], ['dmg', 'spa'], ['dmg', 'range'], ['dmg', 'cm'], ['cf', 'cm'], ['spa', 'range']];
         
         if (candidates.includes('dot')) {
@@ -232,7 +235,7 @@ function _calcHeadDynamicBuffs(headPiece, finalSpa, finalRange, uStats) {
         headDotBuff += 20 * headCalc.uptime;
         
     } else if (headPiece === 'biju_energy') {
-        // Safely pull the real unit directly from the global database to bypass stripped data
+        // Safely pull the real unit directly from the global database
         const realUnit = (typeof unitDatabase !== 'undefined' && uStats && uStats.id) 
             ? unitDatabase.find(u => u.id === uStats.id) : null;
             
@@ -240,21 +243,47 @@ function _calcHeadDynamicBuffs(headPiece, finalSpa, finalRange, uStats) {
         const meterData = (realUnit && realUnit.stats && realUnit.stats.meter) || (realUnit && realUnit.meter) || (uStats && uStats.meter);
 
         if (meterData) {
-            const consume = meterData.consumeAttacks || 1;
-            const refill = meterData.refillAttacks || 0;
+            headCalc.duration = 10; // Biju Energy buff duration
             
-            headCalc.duration = 10;
-            headCalc.attacks = consume + refill;
-            
-            const cycleTime = headCalc.attacks * finalSpa;
-            const activeTime = ((consume - 1) * finalSpa) + headCalc.duration;
-            
-            headCalc.uptime = Math.min(activeTime / cycleTime, 1.0); // Caps at 100%
-            headDmgBuff += 70 * headCalc.uptime;
+            if (meterData.type === 'time') {
+                // --- SASUKE LOGIC (TIME-BASED METER) ---
+                // Takes an average number of attacks to charge, then lasts flat seconds
+                const refill = meterData.refillAttacks || 6;
+                const activeDuration = meterData.duration || 10; 
+                
+                const chargeTime = refill * finalSpa;
+                const totalCycleTime = chargeTime + activeDuration;
+                
+                // Biju Energy lasts 10s, which runs concurrently with his 10s active form
+                headCalc.uptime = Math.min(headCalc.duration / totalCycleTime, 1.0);
+                headDmgBuff += 70 * headCalc.uptime;
+                
+            } else {
+                // --- JINGLIU LOGIC (ATTACK-BASED METER) ---
+                const consume = meterData.consumeAttacks || 1;
+                const refill = meterData.refillAttacks || 0;
+                
+                headCalc.attacks = consume + refill;
+                const cycleTime = headCalc.attacks * finalSpa;
+                const activeTime = ((consume - 1) * finalSpa) + headCalc.duration;
+                
+                headCalc.uptime = Math.min(activeTime / cycleTime, 1.0);
+                headDmgBuff += 70 * headCalc.uptime;
+            }
         } else {
             headCalc.uptime = 0;
             headDmgBuff += 0;
         }
+
+    // --- NEW: SPIRIT ARMOR LOGIC ---
+    } else if (headPiece === 'spirit_armor') {
+        headCalc.attacks = 5;
+        // The buff is active for exactly 1 out of every 5 attacks
+        headCalc.uptime = 1 / 5; // 0.20 (20%)
+        
+        // Adds a DoT buff equal to Final Range * 0.20
+        headDotBuff += finalRange * headCalc.uptime;
+        headCalc.type = 'spirit_armor';
 
     } else if (headPiece === 'junior') {
         return { headDmgBuff: 0, headDotBuff: 0, headCalc: { type: 'junior', multiplier: 1.1 } };

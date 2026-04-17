@@ -183,6 +183,32 @@ function renderDotSection(data, headDotRow) {
         </td></tr>`;
     }
 
+    if (data.headBuffs && data.headBuffs.type === 'spirit_armor') {
+        const uptimePct = (data.headBuffs.uptime || 0);
+        
+        headDotRow = `
+        <tr class="mt-row-sungod" style="border-left-color: #2563eb;"><td colspan="3" class="p-2">
+            <div class="mt-flex-between mb-2">
+                <span class="mt-text-bold text-xs tracking-sm" style="color: #3b82f6;">SPIRIT ARMOR PASSIVE</span>
+                <button class="calc-info-btn" onclick="openInfoPopup('spirit_armor_logic')">?</button>
+            </div>
+            
+            <div class="mt-flex-between text-xs text-white mb-1">
+                <span class="opacity-70">Stat Conversion:</span>
+                <span class="mt-font-mono mt-text-right text-white">100% of Range</span>
+            </div>
+            <div class="mt-flex-between text-xs text-white mb-3">
+                <span class="opacity-70">Uptime (1 in 5 Atks):</span>
+                <span class="mt-font-mono mt-text-right ${uptimePct >= 0.2 ? 'mt-text-green' : 'mt-text-orange'}">${fmt.fix(uptimePct*100,1)}%</span>
+            </div>
+
+            <div class="mt-flex-between mt-border-top mt-pt-sm">
+                <span class="text-white text-xs text-bold">Avg DoT Buff</span>
+                <span class="text-sm mt-text-bold" style="color: #3b82f6;"> +${fmt.fix(data.headBuffs.dot, 2)}%</span>
+            </div>
+        </td></tr>`;
+    }
+
     return `
     <div class="dd-section">
         <div class="dd-title text-accent-end"><span>6. Status Effect (DoT) Breakdown</span> <button class="calc-info-btn" onclick="openInfoPopup('dot_logic')">?</button></div>
@@ -365,7 +391,7 @@ function renderMathContent(data) {
     const setTagCmTotal = baseSetCm + tagCm;
     const preConditionalDmg = data.dmgVal / (data.conditionalData ? data.conditionalData.mult : 1);
 
-    // --- Special HTML Blocks (Sun God / Biju Energy) ---
+    // Special HTML Blocks (Sun God / Biju Energy)
     let headDmgHtml = '';
     if (data.headBuffs && (data.headBuffs.type === 'sun_god' || data.headBuffs.type === 'biju_energy')) {
         const uptimePct = (data.headBuffs.uptime || 0);
@@ -382,9 +408,17 @@ function renderMathContent(data) {
             const realUnit = (typeof unitDatabase !== 'undefined') ? unitDatabase.find(u => u.id === data.baseStats.id) : null;
             const meterData = (realUnit && realUnit.stats && realUnit.stats.meter) || (realUnit && realUnit.meter) || (data.baseStats && data.baseStats.meter);
             
-            statValue = meterData 
-                ? `${meterData.consumeAttacks} Use / ${meterData.refillAttacks} Fill` 
-                : "No Meter Found";
+            if (meterData) {
+                if (meterData.type === 'time') {
+                    // Sasuke's Time-based meter
+                    statValue = `${meterData.duration}s Active / ${meterData.refillAttacks} Fill`;
+                } else {
+                    // Jingliu's Attack-based meter
+                    statValue = `${meterData.consumeAttacks || 1} Use / ${meterData.refillAttacks || 0} Fill`;
+                }
+            } else {
+                statValue = "No Meter Found";
+            }
         } else {
             statValue = fmt.fix(data.range, 1);
         }

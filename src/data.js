@@ -354,12 +354,13 @@ const unitDatabase = [
         stats: { dmg: 2875, spa: 10, crit: 0, cdmg: 150, dot: 0, dotStacks: 1, spaCap: 2.0, element: "Light", range: 27 }
     },
     {
-        id: "sasuke", name: "Sasuke (Chakra)", role: "Damage",
+        id: "sasuke", name: "Sasuke (Great War)", role: "Support(?)",
         img: "images/units/Sasuke.png",
         totalCost: 40000,
-        placement: 2, tags: [],
-        meta: { short: "Ruler", long: "Eternal/Sacred", note: "Ruler for DPS, Eternal/Sacred for support." },
-        stats: { dmg: 2450, spa: 6.75, crit: 0, cdmg: 150, dot: 0, dotStacks: 1, spaCap: 4, passiveDmg: 25, element: "Dark", range: 28 }
+        placement: 2, tags: ["Team 7", "Ninjaverse", "Hero", "Bloodline"],
+        meta: { short: "Ruler", long: "Eternal/Sacred", note: "Ruler for DPS, Eternal/Sacred for support. 50% chance to stun, 3 stuns to fill meter, average of 6 attacks to fill." },
+        stats: { dmg: 3000, spa: 9, crit: 0, cdmg: 150, dot: 0, dotStacks: 1, spaCap: 2.75, passiveDmg: 0, element: "Dark", range: 40 },
+        meter: { type: "time", refillAttacks: 6, duration: 10 }
     },
     {
         id: "mob", name: "Pyscho (100%)", role: "Damage",
@@ -441,14 +442,14 @@ const unitDatabase = [
         totalCost: 39000,
         placement: 3, tags: ["Piece"],
         meta: { short: "Ruler", long: "Ruler/Astral", note: "Ruler provides good dps to cost." },
-        stats: { dmg: 1500, spa: 9, crit: 0, cdmg: 150, dot: 100, dotStacks: 1, spaCap: 6, passiveDmg: 60, element: "Fire", dotDuration: 4, range: 30 }
+        stats: { dmg: 1500, spa: 8, crit: 0, cdmg: 150, dot: 100, dotStacks: 1, spaCap: 6, passiveDmg: 60, passiveRange: 60, element: "Fire", dotDuration: 4, range: 30 }
     },
     {
         id: "Jingliu", name: "Jingliu", role: "Damage",
         img: "images/units/Jingliu.png",
         totalCost: 33725,
         placement: 3, tags: ["Hero", "Uncontrollable Power"],
-        meta: { short: "Ruler", long: "Eternal/Sacred", note: "Eternal provides highest DPS Potential, Ruler provides good dps to cost." },
+        meta: { short: "Ruler", long: "Eternal/Sacred", note: "Eternal provides highest DPS Potential, Ruler provides good dps to cost. Data assumed she is always in Lunar Eclipse state." },
         stats: { dmg: 1700, spa: 6, crit: 50, cdmg: 200, dot: 0, dotStacks: 1, spaCap: 3, passiveDmg: 35, element: "Ice", dotDuration: 0, range: 40 },
         meter: { consumeAttacks: 5, refillAttacks: 1 }
     },

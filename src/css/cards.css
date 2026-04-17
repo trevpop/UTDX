@@ -597,6 +597,11 @@
     color: #7d3eb1;
 }
 
+.border-spirit {
+    border-color: #273ae6;
+    color: #223392;
+}
+
 .border-ninja {
     border-color: #ffffff;
     color: #ffffff;
@@ -715,6 +720,10 @@
 
 .text-bloodeye {
     color: #b192c0;
+}
+
+.text-spirit {
+    color: #1a17da;
 }
 
 .text-reaper {
