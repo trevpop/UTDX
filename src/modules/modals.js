@@ -1,0 +1,684 @@
+// ============================================================================
+// MODALS.JS - Unified Modal Manager
+// ============================================================================
+
+// --- GENERIC MODAL CONTROLLER ---
+
+/**
+ * Toggles visibility of a specific modal ID.
+ * Handles scroll locking on the body and exclusive modal visibility.
+ */
+const toggleModal = (modalId, show = true) => {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    if (show) {
+        // Requirement 1: Close all other open modals first
+        const otherVisible = document.querySelectorAll('.modal-overlay.is-visible');
+        otherVisible.forEach(m => {
+            if (m.id !== modalId) m.classList.remove('is-visible');
+        });
+
+        modal.classList.add('is-visible');
+        if (typeof updateBodyScroll === 'function') updateBodyScroll();
+        
+        // Requirement 2: Add class to body to hide Mobile FAB via CSS
+        document.body.classList.add('modal-open'); 
+    } else {
+        modal.classList.remove('is-visible');
+        
+        // Check if any other modals are still open (shouldn't be, but good practice)
+        // Use timeout to allow UI to update
+        setTimeout(() => {
+            const anyVisible = document.querySelectorAll('.modal-overlay.is-visible').length > 0;
+            if (!anyVisible) {
+                if (typeof updateBodyScroll === 'function') updateBodyScroll();
+                document.body.classList.remove('modal-open'); // Re-show FAB
+            }
+        }, 50);
+    }
+};
+
+/**
+ * Opens the single Universal Modal with dynamic content.
+ * @param {Object} options
+ * @param {string} options.title - Header text
+ * @param {string} options.content - HTML body content
+ * @param {string} options.footer - HTML footer content (buttons)
+ * @param {string} options.size - 'sm', 'lg', 'xl' (optional)
+ * @param {string} options.headerClass - Optional class for header styling
+ */
+function showUniversalModal({ title, content, footerButtons = '', size = '', headerClass = '' }) {
+    const modal = document.getElementById('universalModal');
+    const box = modal.querySelector('.modal-box');
+    const titleEl = modal.querySelector('.modal-title');
+    const bodyEl = modal.querySelector('.modal-body');
+    const footerEl = modal.querySelector('.modal-footer');
+    const headerEl = modal.querySelector('.modal-header');
+
+    // Reset Classes
+    box.className = 'modal-box ' + size;
+    headerEl.className = 'modal-header ' + headerClass;
+
+    // Set Content
+    titleEl.innerHTML = title;
+    bodyEl.innerHTML = content;
+
+    // Default Close Button if no footer provided, or append custom buttons
+    if (!footerButtons) {
+        footerEl.innerHTML = `<button class="action-btn" onclick="closeModal('universalModal')">Close</button>`;
+    } else {
+        footerEl.innerHTML = footerButtons;
+    }
+
+    toggleModal('universalModal', true);
+}
+
+// Global closer helper
+window.closeModal = (id) => toggleModal(id, false);
+
+/**
+ * Specifically handles closing the one-time announcement modal
+ * and marking it as seen in localStorage.
+ */
+window.closeAnnouncement = () => {
+    localStorage.setItem('hasSeenFinalUpdateNotice', 'true');
+    closeModal('announcementModal');
+};
+
+// --- SPECIFIC IMPLEMENTATIONS USING UNIVERSAL MODAL ---
+
+/**
+ * Shows Math Breakdown
+ */
+const showMath = (id) => {
+    let data = cachedResults[id];
+    if (!data) return;
+
+    if (!data.lvStats || !data.critData) {
+        try {
+            data = reconstructMathData(data);
+        } catch (e) { console.error(e); return; }
+    }
+
+    const htmlContent = renderMathContent(data);
+    
+    showUniversalModal({
+        title: `<span class="text-white">DPS BREAKDOWN</span>`, // Clean white title
+        content: htmlContent,
+        size: 'modal-md' // CHANGED FROM 'modal-lg' TO 'modal-md'
+    });
+};
+window.showMath = showMath; // Expose global
+
+/**
+ * Shows Patch Notes
+ */
+const openPatchNotes = () => {
+    if (typeof patchNotesData === 'undefined') return;
+
+    const html = patchNotesData.map(patch => {
+        const changesHtml = patch.changes.map(c => 
+            `<li><span class="patch-tag">${c.type}</span> <span>${c.text}</span></li>`
+        ).join('');
+
+        return `
+            <div class="patch-entry">
+                <div class="patch-header">
+                    <span class="patch-version">${patch.version}</span>
+                    <span class="patch-date">${patch.date}</span>
+                </div>
+                <ul class="patch-list">${changesHtml}</ul>
+            </div>
+        `;
+    }).join('');
+
+    showUniversalModal({
+        title: 'PATCH NOTES',
+        content: html,
+        size: 'modal-md'
+    });
+};
+
+/**
+ * Shows Trait Guide
+ */
+function openTraitGuide(unitId) {
+    const unit = unitDatabase.find(u => u.id === unitId);
+    if (!unit || !unit.meta) return;
+
+    const getTraitName = (id) => {
+        if(!id) return '-';
+        const t = traitsList.find(x => x.id === id || x.name === id);
+        return t ? t.name : id;
+    };
+
+    const generateSection = (label, traitId, icon) => {
+        const name = getTraitName(traitId);
+        
+        const parts = name.split('/').map(s => s.trim());
+        let imagesHtml = '';
+        parts.forEach(part => {
+            const cleanPart = part.split('(')[0].trim();
+            const t = traitsList.find(x => x.name.toLowerCase() === cleanPart.toLowerCase() || x.id === cleanPart.toLowerCase());
+            if (t) {
+                imagesHtml += `<div class="trait-img-rainbow"><img src="src/images/traits/${t.name}.png"></div>`;            }
+        });
+
+        return `
+            <div class="tg-section">
+                <span class="tg-label">${label}</span>
+                <span class="tg-trait-rainbow">${name}</span>
+                <div class="tg-images-row">${imagesHtml}</div>
+            </div>
+        `;
+    };
+
+    const html = `
+        <div class="tg-grid">
+            ${generateSection('Wave 1-30', unit.meta.short, '⚡')}
+            ${generateSection('Infinite Mode', unit.meta.long, '♾️')}
+        </div>
+        <div class="tg-note">
+            <strong>Strategy Note:</strong><br>
+            ${unit.meta.note || "No specific strategy notes available for this unit."}
+        </div>
+    `;
+
+    showUniversalModal({
+        title: 'RECOMMENDED TRAITS',
+        content: html,
+        size: 'modal-sm'
+    });
+}
+
+// Pre-calculated map for O(1) lookups
+let unitMap = null;
+const refreshUnitMap = () => {
+    unitMap = new Map();
+    unitDatabase.forEach(u => unitMap.set(u.id, u));
+};
+
+const getUnitById = (id) => {
+    if (!unitMap) refreshUnitMap();
+    return unitMap.get(id);
+};
+
+window.refreshUnitMap = refreshUnitMap;
+
+function openUnitInfo(unitId) {
+    const unit = getUnitById(unitId);
+    if (!unit) return;
+
+    let passivesHtml = '';
+    if (unit.passives && Array.isArray(unit.passives)) {
+        passivesHtml = unit.passives.map(p => `<li class="info-passive-item"><strong class="text-white">${p.name}:</strong> <span class="info-passive-desc">${p.desc}</span></li>`).join('');
+    } else {
+        const s = unit.stats;
+        if (s.passiveDmg) passivesHtml += `<li><span>Damage:</span> <span>+${s.passiveDmg}%</span></li>`;
+        if (s.passiveSpa) passivesHtml += `<li><span>SPA:</span> <span>-${s.passiveSpa}%</span></li>`;
+        if (s.passiveRange) passivesHtml += `<li><span>Range:</span> <span>+${s.passiveRange}%</span></li>`;
+    }
+    
+    if (!passivesHtml) passivesHtml = '<li>None</li>';
+
+    let etherealHtml = '';
+    if (unit.etherealization) {
+        if (Array.isArray(unit.etherealization)) {
+            etherealHtml = unit.etherealization.map((text, idx) => `
+                <li class="info-ethereal-item">
+                    <span class="info-ethereal-text">${text}</span>
+                    <span class="e-badge">E${idx+1}</span>
+                </li>
+            `).join('');
+        } else {
+            const e = unit.etherealization;
+            if (e.dmg) etherealHtml += `<li><span>Damage:</span> <span>+${e.dmg}%</span></li>`;
+            if (e.spa) etherealHtml += `<li><span>SPA:</span> <span>-${e.spa}%</span></li>`;
+            if (e.range) etherealHtml += `<li><span>Range:</span> <span>+${e.range}%</span></li>`;
+            if (e.desc) etherealHtml += `<li class="text-xs text-dim" style="margin-top: 5px; display: block; text-align: center;">${e.desc}</li>`;
+        }
+    } else {
+        etherealHtml = '<li>None</li>';
+    }
+
+    const html = `
+        <div class="unit-info-modal">
+            <div class="info-section section-discovery">
+                <div class="info-sec-title">Unit Discovery</div>
+                <ul class="info-list">
+                    <li><span>Role:</span> <span>${unit.role}</span></li>
+                    <li><span>Element:</span> <span class="text-custom">${unit.stats.element}</span></li>
+                    <li><span>Cost:</span> <span class="text-gold">${unit.totalCost.toLocaleString()}</span></li>
+                    <li><span>Placement:</span> <span>${unit.placement}</span></li>
+                </ul>
+            </div>
+            <div class="info-section section-passives">
+                <div class="info-sec-title">Passives / Innates</div>
+                <ul class="info-list">${passivesHtml}</ul>
+            </div>
+            <div class="info-section section-ethereal">
+                <div class="info-sec-title">Etherealization Buffs</div>
+                <ul class="info-list">${etherealHtml}</ul>
+            </div>
+            ${unit.ability ? `
+            <div class="info-section section-ability">
+                <div class="info-sec-title">Active Ability: ${unit.ability.abilityName}</div>
+                <ul class="info-list">
+                    ${unit.ability.cooldown ? `<li><span>Cooldown:</span> <span class="text-gold">${unit.ability.cooldown}s</span></li>` : ''}
+                    <li class="info-ability-desc-item"><span class="info-ability-desc">${unit.ability.desc || 'No description available.'}</span></li>
+                </ul>
+            </div>` : ''}
+        </div>
+    `;
+
+    // PERFORMANCE: Wrapping in setTimeout(0) ensures the browser handles the click event 
+    // and clears any pending tasks before tackling the modal layout/rendering.
+    setTimeout(() => {
+        showUniversalModal({
+            title: `UNIT INFO: ${unit.name.toUpperCase()}`,
+            content: html,
+            size: 'modal-sm'
+        });
+    }, 0);
+}
+window.openUnitInfo = openUnitInfo;
+
+/**
+ * Shows Trait Tier List (All Units)
+ */
+/**
+ * Shows Trait Tier List (All Units)
+ */
+function openTraitTierList() {
+    const shortMap = {};
+    const longMap = {};
+    const virtualMap = {};
+
+    const addToMap = (map, traitStr, unit) => {
+        if (!traitStr || traitStr === '-') return;
+        const parts = traitStr.split('/').map(s => s.trim());
+        parts.forEach(p => {
+            if (!map[p]) map[p] = [];
+            map[p].push(unit);
+        });
+    };
+
+    unitDatabase.forEach(u => {
+        if (u.meta) {
+            addToMap(shortMap, u.meta.short, u);
+            addToMap(longMap, u.meta.long, u);
+            if (u.meta.virtual) addToMap(virtualMap, u.meta.virtual, u);
+        }
+    });
+
+    // Helper to get DPS score for sorting
+    const getUnitScore = (u) => {
+        if (window.STATIC_BUILD_DB) {
+             const isAbility = (u.id !== 'genos' && activeAbilityIds.has(u.id)) && u.ability;
+             const isKiritoCard = u.id === 'kirito' && kiritoState && kiritoState.card;
+             const dbKey = u.id + (isKiritoCard ? 'kirito_card' : '') + (isAbility ? '_abil' : '');
+             // Use fixed mode, config 3 (Head+Subs) for max potential
+             const list = window.STATIC_BUILD_DB[dbKey]?.['fixed']?.[3];
+             if (list && list.length > 0) {
+                 return u.id === 'law' ? (list[0].range || 0) : list[0].dps;
+             }
+        }
+        return u.stats.dmg || 0;
+    };
+
+    const traitOrder = ['Ruler', 'Eternal', 'Sacred', 'Fission', 'Astral', 'Duelist', 'Wizard'];
+
+    if (!shortMap['Fission']) shortMap['Fission'] = [];
+    if (!longMap['Fission']) longMap['Fission'] = [];
+
+    const renderSection = (title, map) => {
+        const traits = Object.keys(map).sort((a, b) => {
+            const cleanA = a.split('(')[0].trim();
+            const cleanB = b.split('(')[0].trim();
+            const idxA = traitOrder.indexOf(cleanA);
+            const idxB = traitOrder.indexOf(cleanB);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return a.localeCompare(b);
+        });
+
+        let rows = '';
+        
+        traits.forEach(t => {
+            const units = map[t];
+            // Sort units by DPS descending
+            units.sort((a,b) => getUnitScore(b) - getUnitScore(a));
+
+            // FIXED: Safely extract the bundled Vite image path
+            const unitIcons = units.map(u => {
+                let safeImgHtml = '';
+                if (typeof getUnitImgHtml === 'function') {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = getUnitImgHtml(u);
+                    const extractedImg = tempDiv.querySelector('img');
+                    safeImgHtml = extractedImg ? `<img src="${extractedImg.src}" class="tier-unit-img" onerror="this.style.display='none'">` : `<img src="${u.img}" class="tier-unit-img" onerror="this.style.display='none'">`;
+                } else {
+                    safeImgHtml = `<img src="${u.img}" class="tier-unit-img" onerror="this.style.display='none'">`;
+                }
+
+                return `
+                    <div class="tier-unit" data-id="${u.id}" title="${u.name} (Score: ${parseInt(getUnitScore(u)).toLocaleString()})">
+                        ${safeImgHtml}
+                    </div>
+                `;
+            }).join('');
+
+            const cleanT = t.split('(')[0].trim();
+            const tObj = traitsList.find(x => x.name.toLowerCase() === cleanT.toLowerCase() || x.id === cleanT.toLowerCase());
+            const traitImg = tObj ? `<div class="trait-img-rainbow tier-trait-icon"><img src="src/images/traits/${tObj.name}.png" onerror="this.parentElement.style.display='none'"></div>` : '';
+
+            rows += `
+                <div class="tier-row">
+                    <div class="tier-head">
+                        ${traitImg}
+                        <div class="tier-trait-name">${t}</div>
+                    </div>
+                    <div class="tier-body">
+                        ${unitIcons}
+                    </div>
+                </div>
+            `;
+        });
+
+        return `<div class="tier-section"><div class="tier-section-title">${title}</div><div class="tier-grid">${rows}</div></div>`;
+    };
+
+    showUniversalModal({
+        title: 'TRAIT SUGGESTIONS TIER LIST',
+        content: `<div class="tier-list-container">${renderSection('Wave 1-30', shortMap)}${renderSection('Infinite Mode', longMap)}</div>`,
+        size: 'modal-lg',
+        footerButtons: `<button class="action-btn secondary" onclick="closeModal('universalModal')">Close</button>`
+    });
+}
+window.openTraitTierList = openTraitTierList;
+
+/**
+ * Shows a guide of all standard traits and their stats.
+ */
+function openAllTraitsGuide() {
+    if (typeof traitsList === 'undefined') return;
+
+    const traitsToShow = traitsList.filter(t => t.id !== 'none');
+
+    const formatStat = (key, trait) => {
+        const value = trait[key];
+        if (value === undefined || value === 0 || value === false) return '';
+        
+        let label = key.toUpperCase();
+        let valText = '';
+        let sign = '+';
+        let suffix = '%';
+
+        switch(key) {
+            case 'dmg': label = 'Damage'; valText = `${sign}${value}${suffix}`; break;
+            case 'spa': label = 'SPA'; valText = `-${value}${suffix}`; break;
+            case 'range': label = 'Range'; valText = `${sign}${value}${suffix}`; break;
+            case 'bossDmg': label = 'Boss Dmg'; valText = `${sign}${value}${suffix}`; break;
+            case 'critRate': label = 'Crit Rate'; valText = `${sign}${value}${suffix}`; break;
+            case 'dotBuff': 
+                label = 'DoT Buff'; 
+                valText = `${sign}${value}${suffix}`; 
+                if (trait.isDotBugged) valText += ` <span style="color: #f87171; font-size: 0.8em;">(Bugged)</span>`;
+                break;
+            case 'costReduction': label = 'Cost'; valText = `-${value}${suffix}`; break;
+            case 'limitPlace': label = 'Placement'; valText = `Limit ${value}`; break;
+            case 'afflictionDuration': 
+                label = 'Affliction Dur.'; 
+                valText = `${sign}${value}${suffix}`; 
+                if (trait.isAfflictionBugged) valText += ` <span style="color: #f87171; font-size: 0.8em;">(Bugged)</span>`;
+                break;
+            case 'relicBuff': label = 'Relic Stats'; valText = `${sign}${((value - 1) * 100).toFixed(0)}${suffix}`; break;
+            case 'isEternal': return `<li><span class="atg-label">Passive</span><span class="atg-value" style="font-size: 0.75rem; text-align: right; line-height: 1.2;">+5% Dmg & +2.5% Rng / Wave<br>Max: +60% & +30% (12 Waves)</span></li>`;
+            case 'hasRadiation': return `<li><span class="atg-label">Radiation</span><span class="atg-value" title="Deals ${trait.radiationPct}% of Unit Damage over 10 seconds">${trait.radiationPct}% Dmg / 10s</span></li>`;
+            case 'dmgDebuff': 
+                label = 'Debuff'; 
+                valText = `${sign}${value}${suffix}`; 
+                if (trait.isDebuffBugged) valText += ` <span style="color: #f87171; font-size: 0.8em;">(Bugged)</span>`;
+                break;
+            case 'allowDotStack': return `<li><span class="atg-label">Passive</span><span class="atg-value">DoT Stacks</span></li>`;
+            default: return '';
+        }
+        return `<li><span class="atg-label">${label}</span><span class="atg-value">${valText}</span></li>`;
+    };
+
+    const html = traitsToShow.map(trait => {
+        const statOrder = ['dmg', 'spa', 'range', 'critRate', 'bossDmg', 'dotBuff', 'afflictionDuration', 'relicBuff', 'costReduction', 'limitPlace', 'isEternal', 'hasRadiation', 'dmgDebuff', 'allowDotStack'];
+        const statsHtml = statOrder.map(key => formatStat(key, trait)).join('');
+
+        return `
+            <div class="all-traits-card">
+                <div class="atg-header">
+                    <div class="trait-img-rainbow"><img src="src/images/traits/${trait.name}.png" onerror="this.parentElement.style.display='none'"></div>
+                    <span class="atg-name">${trait.name}</span>
+                </div>
+                <div class="atg-desc">${trait.desc}</div>
+                <ul class="atg-stats">
+                    ${statsHtml}
+                </ul>
+            </div>
+        `;
+    }).join('');
+
+    showUniversalModal({
+        title: 'TRAIT STATS',
+        content: `<div class="all-traits-grid">${html}</div>`,
+        size: 'modal-lg'
+    });
+}
+window.openAllTraitsGuide = openAllTraitsGuide;
+
+/**
+ * Shows Comparison
+ * (Relies on rendering.js logic to build string)
+ */
+function openComparison() {
+    if (selectedUnitIds.size === 0) return;
+
+    // We need to generate the HTML. 
+    const html = generateComparisonHTML(); 
+
+    showUniversalModal({
+        title: 'META COMPARISON',
+        content: html,
+        size: 'modal-lg',
+        footerButtons: `<button class="action-btn secondary" onclick="closeModal('universalModal')">Close</button>`
+    });
+}
+
+// --- INFO POPUPS (Overlay style) ---
+
+function openInfoPopup(key) {
+    const data = infoDefinitions[key];
+    if(!data) return;
+    
+    // Remove existing if any
+    const existing = document.getElementById('mathInfoPopup');
+    if(existing) existing.remove();
+
+    let overlay = document.createElement('div');
+    overlay.id = 'mathInfoPopup';
+    overlay.className = 'info-popup-overlay is-visible';
+    
+    // Prevent background scrolling while this top-level popup is open
+    document.body.classList.add('modal-open');
+
+    // Close on backdrop click
+    overlay.onclick = function(e) {
+        if (e.target === overlay) closeInfoPopup();
+    };
+    
+    // Reusing the standard .modal-box structure
+    overlay.innerHTML = `
+        <div class="modal-box modal-sm info-popup-box">
+            <div class="modal-header">
+                <h2 class="modal-title">${data.title}</h2>
+            </div>
+            <div class="modal-body">
+                <p style="color: #ccc; font-size: 0.95rem; line-height: 1.6; margin-bottom: 15px;">
+                    ${data.desc}
+                </p>
+                <div class="ip-formula">${data.formula}</div>
+            </div>
+            <div class="modal-footer">
+                <button class="action-btn secondary" onclick="closeInfoPopup()">Close</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function closeInfoPopup() {
+    const overlay = document.getElementById('mathInfoPopup');
+    if(overlay) overlay.remove();
+    
+    // Only remove modal-open if no other modals are active
+    // (This ensures the underlying Math modal remains scroll-locked if it's open)
+    const otherModals = document.querySelectorAll('.modal-overlay.is-visible');
+    if(otherModals.length === 0) {
+        document.body.classList.remove('modal-open');
+    }
+}
+
+
+function generateComparisonHTML() {
+    // Copied and adapted logic from previous openComparison
+    const isFixedMode = document.body.classList.contains('show-fixed-relics');
+    const subMode = isFixedMode ? 'fixed' : 'bugged';
+
+    const showHead = document.getElementById('globalHeadPiece').checked;
+    const showSubs = document.getElementById('globalSubStats').checked;
+
+    let configIndex = 0;
+    if (!showHead && !showSubs) configIndex = 0;
+    else if (!showHead && showSubs) configIndex = 1;
+    else if (showHead && !showSubs) configIndex = 2;
+    else if (showHead && showSubs) configIndex = 3;
+
+    let comparisonData = [];
+
+    selectedUnitIds.forEach(unitId => {
+        const unit = unitDatabase.find(u => u.id === unitId);
+        if (!unit) return;
+
+        const useAbility = activeAbilityIds.has(unitId);
+        const mode = (useAbility && unit.ability) ? 'abil' : 'base';
+
+        const cacheEntry = unitBuildsCache[unitId];
+        if (!cacheEntry || !cacheEntry[mode] || !cacheEntry[mode][subMode]) return;
+
+        const allBuilds = cacheEntry[mode][subMode][configIndex] || [];
+        if (allBuilds.length === 0) return;
+
+        // Apply filters from the Unit Card
+        const card = document.getElementById('card-' + unitId);
+        let activePrio = 'all';
+        let activeSet = 'all';
+        let activeHead = 'all';
+
+        if (card) {
+            activePrio = card.querySelector('select[data-filter="prio"]')?.value || 'all';
+            activeSet = card.querySelector('select[data-filter="set"]')?.value || 'all';
+            activeHead = card.querySelector('select[data-filter="head"]')?.value || 'all';
+        }
+
+        const filteredBuilds = allBuilds.filter(r => {
+            const prioMatch = activePrio === 'all' || r.prio === activePrio;
+            const setMatch = activeSet === 'all' || r.setName === activeSet;
+            const headMatch = activeHead === 'all' || (r.headUsed || 'none') === activeHead;
+            return prioMatch && setMatch && headMatch;
+        });
+
+        if (filteredBuilds.length === 0) return; 
+
+        // Sort based on Prio (Range vs DPS)
+        if (activePrio === 'range' || (unitId === 'law' && activePrio === 'all')) {
+            filteredBuilds.sort((a, b) => (b.range || 0) - (a.range || 0));
+        } else {
+            filteredBuilds.sort((a, b) => b.dps - a.dps);
+        }
+
+        const bestBuild = filteredBuilds[0];
+
+        const mapStat = (s) => {
+            if (s === 'cm') return 'CDmg';
+            if (s === 'cf') return 'Crit';
+            if (s === 'dot') return 'DoT';
+            if (s === 'spa') return 'Spa';
+            if (s === 'range') return 'Rng';
+            return 'Dmg';
+        };
+
+        const formatData = (buildResult) => {
+            const mainStr = `(${mapStat(buildResult.mainStats.body)}/${mapStat(buildResult.mainStats.legs)})`;
+            const headStr = (buildResult.headUsed && buildResult.headUsed !== 'none') ? ' + Head' : '';
+            const isRange = buildResult.prio === 'range';
+            
+            const displayVal = isRange ? (buildResult.range || 0) : buildResult.dps;
+
+            return {
+                u: unit,
+                bestTraitName: buildResult.traitName,
+                bestBuildName: `${buildResult.setName} ${mainStr}${headStr}`,
+                bestSpa: buildResult.spa,
+                bestPrio: buildResult.prio.toUpperCase(),
+                isCustom: buildResult.isCustom,
+                sortVal: displayVal,
+                isRangePrio: isRange
+            };
+        };
+
+        comparisonData.push(formatData(bestBuild));
+    });
+
+    comparisonData.sort((a, b) => b.sortVal - a.sortVal);
+
+    let html = `<table class="compare-table"><thead><tr><th class="w-25">Unit</th><th>Primary Stat</th><th>Best Filtered Build</th></tr></thead><tbody>`;
+    
+    if (comparisonData.length === 0) {
+        html += `<tr><td colspan="3" class="comp-empty">No builds found matching current filters.</td></tr>`;
+    } else {
+        comparisonData.forEach(data => {
+            const rowClass = data.isCustom ? 'comp-row-custom' : '';
+            const valStr = data.isRangePrio ? data.sortVal.toFixed(1) : format(data.sortVal);
+            const labelStr = data.isRangePrio ? "RANGE" : "DPS";
+            const labelClass = data.isRangePrio ? "comp-val-rng" : "comp-val-dps";
+            const prioClass = data.bestPrio === 'SPA' ? 'text-custom' : (data.bestPrio === 'RANGE' ? 'text-success' : 'text-gold');
+
+            html += `
+            <tr class="${rowClass}">
+                <td>
+                    <div class="comp-unit-wrap">
+                        ${getUnitImgHtml(data.u, 'comp-img', 'small')}
+                        <div>
+                            <div class="text-bold text-white">${data.u.name}</div>
+                            <span class="comp-sub">${data.isCustom ? 'Custom' : data.u.role}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="comp-highlight">
+                        ${valStr} <span class="comp-val-label ${labelClass}">${labelStr}</span>
+                    </div>
+                    <span class="comp-sub">SPA: ${data.bestSpa.toFixed(3)}s</span>
+                </td>
+                <td>
+                    <span class="comp-tag">${data.bestTraitName}</span>
+                    <div class="comp-build-name">
+                        ${data.bestBuildName} 
+                        <span class="comp-prio-tag ${prioClass}">[${data.bestPrio}]</span>
+                    </div>
+                </td>
+            </tr>`;
+        });
+    }
+    
+    html += `</tbody></table>`;
+    return html;
+}
