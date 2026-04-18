@@ -688,10 +688,10 @@ const unitDatabase = [
     {
         id: "ancient_mage", name: "Ancient Mage (Sage)", role: "Utility",
         img: "images/units/AncientMage.png",
-        totalCost: 100000,
+        totalCost: 66700,
         placement: 1, tags: ["Sage", "Bloodline", "Hero", "Main Character"],
         meta: { short: "Ruler", long: "Ruler", note: "Ruler is best due to 1 placement" },
-        stats: { dmg: 3700, spa: 7, crit: 0, cdmg: 150, dot: 60, dotStacks: 1, spaCap: 2.5, passiveDmg: 0, passiveDot: 20, element: "Light", dotDuration: 10, range: 45 },
+        stats: { dmg: 5500, spa: 8, crit: 0, cdmg: 150, dot: 60, dotStacks: 1, spaCap: 2.5, passiveDmg: 0, passiveDot: 20, element: "Light", dotDuration: 10, range: 45 },
         modes: {
             utility: { desc: 'Utility', dot: 60, dotDuration: 10 },
             dps: { desc: 'DPS', dmg: 20, spaMult: 1.4, rangeMult: 0.7, spaCap: 3.5 },
