@@ -35,7 +35,7 @@ const toggleModal = (modalId, show = true) => {
                 if (typeof updateBodyScroll === 'function') updateBodyScroll();
                 document.body.classList.remove('modal-open'); // Re-show FAB
             }
-        }, 50);
+        }, 20);
     }
 };
 

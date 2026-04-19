@@ -75,7 +75,6 @@ function renderBaseDamageSection(data, levelMult, traitRowsDmg, dmgAfterRelic, h
                     ${(data.bloodlineTagDmg || 0) > 0 ? `<tr><td class="mt-cell-label mt-pl-md opacity-70" style="color: #ef4444;">↳ Bloodline Eye (Tag)</td><td class="mt-cell-formula" style="color: #ef4444;">+${fmt.fix(data.bloodlineTagDmg, 1)}%</td><td class="mt-cell-val"></td></tr>` : ''}
 
                     ${(data.amModeDmg || 0) > 0 ? `<tr><td class="mt-cell-label mt-pl-md opacity-70" style="color: #39C5BB;">↳ DPS Mode</td><td class="mt-cell-formula" style="color: #39C5BB;">+${fmt.fix(data.amModeDmg, 1)}%</td><td class="mt-cell-val"></td></tr>` : ''}
-                    ${(data.amBossDmg || 0) > 0 ? `<tr><td class="mt-cell-label mt-pl-md opacity-70 mt-text-gold">↳ Attacking Boss</td><td class="mt-cell-formula mt-text-gold">+${fmt.fix(data.amBossDmg, 1)}%</td><td class="mt-cell-val"></td></tr>` : ''}
 
                     ${data.conditionalData ? `
                     <tr><td class="mt-cell-label mt-pt-md mt-text-orange mt-text-bold">${data.conditionalData.name}</td><td class="mt-cell-formula mt-pt-md mt-text-orange mt-text-bold">x${data.conditionalData.mult.toFixed(2)}</td><td class="mt-cell-val calc-highlight mt-pt-md">${fmt.num(data.dmgVal)}</td></tr>` : ''}
@@ -95,12 +94,12 @@ function renderCritSection(data, setTagCfTotal, setTagCmTotal) {
                     ${(data.traitObj.critRate || 0) > 0 ? `<tr><td class="mt-cell-label mt-pl-lg text-dim text-xs">• Trait (${data.traitObj.name})</td><td class="mt-cell-formula"></td><td class="mt-cell-val text-dim text-xs">${fmt.fix(data.traitObj.critRate, 1)}%</td></tr>` : ''}
                     ${data.relicBuffs.cf > 0 ? `<tr><td class="mt-cell-label mt-pl-lg text-dim text-xs">• Relics (Main+Sub)</td><td class="mt-cell-formula"></td><td class="mt-cell-val text-dim text-xs">${fmt.fix(data.relicBuffs.cf, 1)}%</td></tr>` : ''}
                     ${setTagCfTotal > 0 ? `<tr><td class="mt-cell-label mt-pl-lg text-dim text-xs">• Set Bonus & Tags</td><td class="mt-cell-formula"></td><td class="mt-cell-val text-dim text-xs">${fmt.fix(setTagCfTotal, 1)}%</td></tr>` : ''}
-                    ${(data.frierenBuff || 0) > 0 ? `<tr><td class="mt-cell-label mt-pl-lg text-xs" style="color: ${colorSilver}">↳ Frieren Support</td><td class="mt-cell-formula"></td><td class="mt-cell-val text-xs" style="color: ${colorSilver}">+${fmt.fix(data.frierenBuff, 1)}%</td></tr>` : ''}
+                    ${(data.frierenBuff || 0) > 0 ? `<tr><td class="mt-cell-label mt-pl-lg text-xs" style="color: ${colorSilver}">↳ Ancient Mage</td><td class="mt-cell-formula"></td><td class="mt-cell-val text-xs" style="color: ${colorSilver}">+${fmt.fix(data.frierenBuff, 1)}%</td></tr>` : ''}
                     
                     <tr><td class="mt-cell-label mt-pl-sm text-gray">↳ CDmg Base</td><td class="mt-cell-formula"></td><td class="mt-cell-val text-gray font-normal">${fmt.fix(data.critData.baseCdmg,0)}</td></tr>
                     ${data.relicBuffs.cm > 0 ? `<tr><td class="mt-cell-label mt-pl-lg text-dim text-xs">• Relics</td><td class="mt-cell-formula"></td><td class="mt-cell-val text-dim text-xs">+${fmt.fix(data.relicBuffs.cm, 1)}%</td></tr>` : ''}
                     ${setTagCmTotal > 0 ? `<tr><td class="mt-cell-label mt-pl-lg text-dim text-xs">• Set & Tags</td><td class="mt-cell-formula"></td><td class="mt-cell-val text-dim text-xs">+${fmt.fix(setTagCmTotal, 1)}%</td></tr>` : ''}
-                    ${(data.frierenBuff || 0) > 0 ? `<tr><td class="mt-cell-label mt-pl-lg text-xs" style="color: ${colorSilver}">↳ Frieren Support</td><td class="mt-cell-formula"></td><td class="mt-cell-val text-xs" style="color: ${colorSilver}">+${fmt.fix(data.frierenBuff, 1)}%</td></tr>` : ''}
+                    ${(data.frierenBuff || 0) > 0 ? `<tr><td class="mt-cell-label mt-pl-lg text-xs" style="color: ${colorSilver}">↳ Ancient Mage</td><td class="mt-cell-formula"></td><td class="mt-cell-val text-xs" style="color: ${colorSilver}">+${fmt.fix(data.frierenBuff, 1)}%</td></tr>` : ''}
 
                     <tr><td class="mt-cell-label">Total Crit Damage</td><td class="mt-cell-formula">=</td><td class="mt-cell-val calc-highlight">${fmt.fix(data.critData.cdmg, 0)}%</td></tr>
                     

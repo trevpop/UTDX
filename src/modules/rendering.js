@@ -73,7 +73,9 @@ window.setAncientMageMode = function(val) {
 window.toggleAncientMageBoss = function(cb) {
     ancientMageState.attackBoss = cb.checked;
     wipeUnitCache('ancient_mage');
-    updateBuildListDisplay('ancient_mage');
+    if (typeof updateBuildListDisplay === 'function') {
+        updateBuildListDisplay('ancient_mage');
+    }
 };
 
 function getUnitControlsHtml(unit) {
@@ -315,7 +317,7 @@ function updateBuildListDisplay(unitId) {
             return (b.dps * getW(b)) - (a.dps * getW(a));
         });
 
-        const slice = filtered.slice(0, 50);
+        const slice = filtered.slice(0, 20);
         return slice.map((r, i) => generateBuildRowHTML(r, i, { totalCost: unitCost, placement: unitPlace, sortMode: sortSelect, unitId, benchmarkDps: benchmarkDps })).join('');
     };
 

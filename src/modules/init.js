@@ -80,7 +80,7 @@ function injectSupportButtons() {
     // 3. Inject the three buttons with their specific color classes
     const mikuBtn = createSupportBtn('globalMikuBuff', 'Miku Buff', "Apply Miku's +100% Damage Buff", 'toggleMikuBuff', 'miku-btn-special');
     const buddhaBtn = createSupportBtn('globalBuddhaBuff', 'Buddha Buff', "Apply Buddha's +20% Dmg/Rng/SPA Buff", 'toggleBuddhaBuff', 'buddha-btn-special');
-    const frierenBtn = createSupportBtn('globalFrierenBuff', 'Frieren Support', "Apply Frieren's +20% Crit Buffs", 'toggleFrierenBuff', 'frieren-btn-special');
+    const frierenBtn = createSupportBtn('globalFrierenBuff', 'Ancient Mage', "Apply Frieren's +20% Crit Buffs", 'toggleFrierenBuff', 'frieren-btn-special');
 
     // Find the Inventory Mode toggle to place them right after it
     const invLabel = document.getElementById('invModeToggle');

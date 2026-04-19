@@ -145,7 +145,7 @@ const handleSupportToggle = (stateKey, checkbox) => {
             renderQueueIndex = 0;
             renderDatabase();
         }
-    }, 50);
+    }, 20);
 };
 
 // Hook up the HTML buttons to the Shared Helper

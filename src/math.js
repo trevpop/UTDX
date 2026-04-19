@@ -396,10 +396,6 @@ function calculateDPS(uStats, relicStats, context) {
         }
     }
 
-    // Ancient Mage Boss Slayer Additive
-    if (uStats.id === 'ancient_mage' && window.ancientMageState?.mode === 'dps' && window.ancientMageState?.attackBoss) {
-        passivePcent += 50;
-    }
 
     if (uStats.id === 'water_god') {
         passivePcent += (75 * placement);
@@ -434,13 +430,12 @@ function calculateDPS(uStats, relicStats, context) {
     const frierenBuff = (typeof window !== 'undefined' && window.frierenBuffActive) ? 20 : 0;
 
     // --- ANCIENT MAGE UI VARIABLES ---
-    let amModeDmg = 0, amModeSpa = 0, amModeRange = 0, amBossDmg = 0;
+    let amModeDmg = 0, amModeSpa = 0, amModeRange = 0;
     if (uStats.id === 'ancient_mage' && typeof window.ancientMageState !== 'undefined') {
         if (window.ancientMageState.mode === 'dps') {
             amModeDmg = 20;
             amModeSpa = -40; 
             amModeRange = -30;
-            if (window.ancientMageState.attackBoss) amBossDmg = 50;
         }
     }
 
@@ -454,12 +449,22 @@ function calculateDPS(uStats, relicStats, context) {
 
     const { headDmgBuff, headDotBuff, headCalc } = _calcHeadDynamicBuffs(headPiece, finalSpa, finalRange, uStats);
 
-    let additiveTotal = (sBonus.dmg || 0) + passivePcent + headDmgBuff + mikuBuff + buddhaBuff + amModeDmg + amBossDmg + bloodlineFormDmg + bloodlineTagDmg;
+    let additiveTotal = (sBonus.dmg || 0) + passivePcent + headDmgBuff + mikuBuff + buddhaBuff + amModeDmg + bloodlineFormDmg + bloodlineTagDmg;
     if (headPiece === 'junior' && uStats.id === 'water_god') {
         additiveTotal *= 1.1;
     }
 
-    const finalDmg = lvStats.dmg * (1 + traitDmgPct / 100) * (1 + baseR_Dmg / 100) * (1 + additiveTotal / 100) * (uStats.burnMultiplier ? (1 + uStats.burnMultiplier / 100) : 1);
+    // --- MULTIPLICATIVE TARGET CONDITIONS ---
+    let condData = null;
+    if (uStats.burnMultiplier) {
+        condData = { name: "Target: Burn", val: uStats.burnMultiplier, mult: (1 + uStats.burnMultiplier / 100) };
+    } else if (uStats.id === 'ancient_mage' && window.ancientMageState?.mode === 'dps' && window.ancientMageState?.attackBoss) {
+        condData = { name: "Target: Boss", val: 50, mult: 1.5 };
+    } else if (uStats.id === 'dragon_slayer' && isAbility) {
+        condData = { name: "Target: Boss", val: 50, mult: 1.5 };
+    }
+
+    const finalDmg = lvStats.dmg * (1 + traitDmgPct / 100) * (1 + baseR_Dmg / 100) * (1 + additiveTotal / 100) * (condData ? condData.mult : 1);
 
     const finalCdmgStat = uStats.cdmg + (sBonus.cm || 0) + baseR_Cm + frierenBuff; 
     const finalCritRate = Math.min(uStats.crit + traitCritRate + ((uStats.id === 'kirito') ? 0 : (baseR_Cf + (sBonus.cf || 0))) + frierenBuff, 100);
@@ -536,7 +541,7 @@ function calculateDPS(uStats, relicStats, context) {
         amModeDmg,
         amModeSpa,
         amModeRange,
-        amBossDmg,
+        conditionalData: condData,
         bloodlineFormDmg,
         bloodlineTagDmg,
         bloodlineTagRange,
